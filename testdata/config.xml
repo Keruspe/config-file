@@ -1,9 +1,8 @@
 <TestConfig>
     <host>example.com</host>
     <port>443</port>
-    <tags>
-        example
-    </tags>
+    <tags>example</tags>
+    <tags>test</tags>
     <inner>
         <answer>42</answer>
     </inner>

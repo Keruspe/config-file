@@ -123,14 +123,10 @@ mod test {
     impl TestConfig {
         #[allow(unused)]
         fn example() -> Self {
-            Self::with_tags(vec!["example".to_string(), "test".to_string()])
-        }
-
-        fn with_tags(tags: Vec<String>) -> Self {
             Self {
                 host: "example.com".to_string(),
                 port: 443,
-                tags,
+                tags: vec!["example".to_string(), "test".to_string()],
                 inner: TestConfigInner { answer: 42 },
             }
         }
@@ -167,7 +163,7 @@ mod test {
     #[cfg(feature = "xml")]
     fn test_xml() {
         let config = TestConfig::from_config_file("testdata/config.xml");
-        assert_eq!(config.unwrap(), TestConfig::with_tags(vec!["example".to_string()])); // XML doesn't support list of strings properly
+        assert_eq!(config.unwrap(), TestConfig::example());
     }
 
     #[test]
