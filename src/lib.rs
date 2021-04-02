@@ -41,3 +41,70 @@ pub enum ConfigFileError {
     #[error("don't know how to parse file")]
     UnknownFormat,
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    use serde::Deserialize;
+
+    #[derive(Debug, Deserialize, PartialEq)]
+    struct TestConfig {
+        host: String,
+        port: u64,
+        tags: Vec<String>,
+        inner: TestConfigInner,
+    }
+
+    #[derive(Debug, Deserialize, PartialEq)]
+    struct TestConfigInner {
+        answer: u8,
+    }
+
+    impl TestConfig {
+        fn example() -> Self {
+            Self {
+                host: "example.com".to_string(),
+                port: 443,
+                tags: vec!["example".to_string(), "test".to_string()],
+                inner: TestConfigInner {
+                    answer: 42,
+                },
+            }
+        }
+    }
+
+    #[test]
+    fn test_unknown() {
+        let config = parse::<TestConfig, _>("/tmp/foobar");
+        assert!(matches!(config, Err(ConfigFileError::UnknownFormat)));
+    }
+
+    #[test]
+    #[cfg(feature = "toml")]
+    fn test_file_not_found() {
+        let config = parse::<TestConfig, _>("/tmp/foobar.toml");
+        assert!(matches!(config, Err(ConfigFileError::FileRead(_))));
+    }
+
+    #[test]
+    #[cfg(feature = "json")]
+    fn test_json() {
+        let config = parse::<TestConfig, _>("testdata/config.json");
+        assert_eq!(config.unwrap(), TestConfig::example());
+    }
+
+    #[test]
+    #[cfg(feature = "toml")]
+    fn test_toml() {
+        let config = parse::<TestConfig, _>("testdata/config.toml");
+        assert_eq!(config.unwrap(), TestConfig::example());
+    }
+
+    #[test]
+    #[cfg(feature = "yaml")]
+    fn test_yaml() {
+        let config = parse::<TestConfig, _>("testdata/config.yml");
+        assert_eq!(config.unwrap(), TestConfig::example());
+    }
+}
