@@ -28,7 +28,7 @@
 //! ```
 
 use serde::de::DeserializeOwned;
-use std::{ffi::OsStr, path::Path};
+use std::{ffi::OsStr, fs::File, path::Path};
 use thiserror::Error;
 #[cfg(feature = "toml")]
 use toml_crate as toml;
@@ -52,17 +52,17 @@ impl<C: DeserializeOwned> FromConfigFile for C {
         match extension {
             #[cfg(feature = "json")]
             Some("json") => {
-                serde_json::from_str(contents(path)?.as_str()).map_err(ConfigFileError::Json)
+                serde_json::from_reader(open_file(path)?).map_err(ConfigFileError::Json)
             }
             #[cfg(feature = "toml")]
-            Some("toml") => toml::from_str(contents(path)?.as_str()).map_err(ConfigFileError::Toml),
+            Some("toml") => toml::from_str(std::fs::read_to_string(path).map_err(ConfigFileError::FileRead)?.as_str()).map_err(ConfigFileError::Toml),
             #[cfg(feature = "xml")]
             Some("xml") => {
-                serde_xml_rs::from_str(contents(path)?.as_str()).map_err(ConfigFileError::Xml)
+                serde_xml_rs::from_reader(open_file(path)?).map_err(ConfigFileError::Xml)
             }
             #[cfg(feature = "yaml")]
             Some("yaml") | Some("yml") => {
-                serde_yaml::from_str(contents(path)?.as_str()).map_err(ConfigFileError::Yaml)
+                serde_yaml::from_reader(open_file(path)?).map_err(ConfigFileError::Yaml)
             }
             _ => Err(ConfigFileError::UnknownFormat),
         }
@@ -70,8 +70,8 @@ impl<C: DeserializeOwned> FromConfigFile for C {
 }
 
 #[allow(unused)]
-fn contents(path: &Path) -> Result<String, ConfigFileError> {
-    std::fs::read_to_string(path).map_err(ConfigFileError::FileRead)
+fn open_file(path: &Path) -> Result<File, ConfigFileError> {
+    File::open(path).map_err(ConfigFileError::FileRead)
 }
 
 /// This type represents all possible errors that can occur when loading data from a configuration file.
