@@ -57,7 +57,7 @@ impl<C: DeserializeOwned> FromConfigFile for C {
             #[cfg(feature = "toml")]
             Some("toml") => toml::from_str(
                 std::fs::read_to_string(path)
-                    .map_err(ConfigFileError::FileRead)?
+                    .map_err(ConfigFileError::FileAccess)?
                     .as_str(),
             )
             .map_err(ConfigFileError::Toml),
@@ -69,14 +69,14 @@ impl<C: DeserializeOwned> FromConfigFile for C {
             Some("yaml") | Some("yml") => {
                 serde_yaml::from_reader(open_file(path)?).map_err(ConfigFileError::Yaml)
             }
-            _ => Err(ConfigFileError::UnknownFormat),
+            _ => Err(ConfigFileError::UnsupportedFormat),
         }
     }
 }
 
 #[allow(unused)]
 fn open_file(path: &Path) -> Result<File, ConfigFileError> {
-    File::open(path).map_err(ConfigFileError::FileRead)
+    File::open(path).map_err(ConfigFileError::FileAccess)
 }
 
 /// This type represents all possible errors that can occur when loading data from a configuration file.
@@ -84,7 +84,7 @@ fn open_file(path: &Path) -> Result<File, ConfigFileError> {
 pub enum ConfigFileError {
     #[error("couldn't read config file")]
     /// There was an error while reading the configuration file
-    FileRead(#[from] std::io::Error),
+    FileAccess(#[from] std::io::Error),
     #[cfg(feature = "json")]
     #[error("couldn't parse JSON file")]
     /// There was an error while parsing the JSON data
@@ -103,7 +103,7 @@ pub enum ConfigFileError {
     Yaml(#[from] serde_yaml::Error),
     #[error("don't know how to parse file")]
     /// We don't know how to parse this format according to the file extension
-    UnknownFormat,
+    UnsupportedFormat,
 }
 
 #[cfg(test)]
@@ -140,14 +140,14 @@ mod test {
     #[test]
     fn test_unknown() {
         let config = TestConfig::from_config_file("/tmp/foobar");
-        assert!(matches!(config, Err(ConfigFileError::UnknownFormat)));
+        assert!(matches!(config, Err(ConfigFileError::UnsupportedFormat)));
     }
 
     #[test]
     #[cfg(feature = "toml")]
     fn test_file_not_found() {
         let config = TestConfig::from_config_file("/tmp/foobar.toml");
-        assert!(matches!(config, Err(ConfigFileError::FileRead(_))));
+        assert!(matches!(config, Err(ConfigFileError::FileAccess(_))));
     }
 
     #[test]
