@@ -10,6 +10,7 @@
 //!
 //! - toml is enabled by default
 //! - json is optional
+//! - xml is optional
 //! - yaml is optional
 //!
 //! # Examples
@@ -55,6 +56,10 @@ impl<C: DeserializeOwned> FromConfigFile for C {
             }
             #[cfg(feature = "toml")]
             Some("toml") => toml::from_str(contents(path)?.as_str()).map_err(ConfigFileError::Toml),
+            #[cfg(feature = "xml")]
+            Some("xml") => {
+                serde_xml_rs::from_str(contents(path)?.as_str()).map_err(ConfigFileError::Xml)
+            }
             #[cfg(feature = "yaml")]
             Some("yaml") | Some("yml") => {
                 serde_yaml::from_str(contents(path)?.as_str()).map_err(ConfigFileError::Yaml)
@@ -83,6 +88,10 @@ pub enum ConfigFileError {
     #[error("couldn't parse TOML file")]
     /// There was an error while parsing the TOML data
     Toml(#[from] toml::de::Error),
+    #[cfg(feature = "xml")]
+    #[error("couldn't parse XML file")]
+    /// There was an error while parsing the XML data
+    Xml(#[from] serde_xml_rs::Error),
     #[cfg(feature = "yaml")]
     #[error("couldn't parse YAML file")]
     /// There was an error while parsing the YAML data
@@ -114,10 +123,14 @@ mod test {
     impl TestConfig {
         #[allow(unused)]
         fn example() -> Self {
+            Self::with_tags(vec!["example".to_string(), "test".to_string()])
+        }
+
+        fn with_tags(tags: Vec<String>) -> Self {
             Self {
                 host: "example.com".to_string(),
                 port: 443,
-                tags: vec!["example".to_string(), "test".to_string()],
+                tags,
                 inner: TestConfigInner { answer: 42 },
             }
         }
@@ -148,6 +161,13 @@ mod test {
     fn test_toml() {
         let config = TestConfig::from_config_file("testdata/config.toml");
         assert_eq!(config.unwrap(), TestConfig::example());
+    }
+
+    #[test]
+    #[cfg(feature = "xml")]
+    fn test_xml() {
+        let config = TestConfig::from_config_file("testdata/config.xml");
+        assert_eq!(config.unwrap(), TestConfig::with_tags(vec!["example".to_string()])); // XML doesn't support list of strings properly
     }
 
     #[test]

@@ -1,0 +1,10 @@
+<TestConfig>
+    <host>example.com</host>
+    <port>443</port>
+    <tags>
+        example
+    </tags>
+    <inner>
+        <answer>42</answer>
+    </inner>
+</TestConfig>

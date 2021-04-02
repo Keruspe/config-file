@@ -11,6 +11,7 @@ config-file reads your configuration files and parse them automatically using th
 
 - toml is enabled by default
 - json is optional
+- xml is optional
 - yaml is optional
 
 ## Examples
