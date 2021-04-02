@@ -10,6 +10,8 @@ pub fn parse<C: DeserializeOwned, P: AsRef<Path>>(path: P) -> Result<C> {
     let path = path.as_ref();
     let extension = path.extension().and_then(OsStr::to_str);
     match extension {
+        #[cfg(feature = "json")]
+        Some("json") => serde_json::from_str(contents(path)?.as_str()).map_err(ConfigFileError::Json),
         #[cfg(feature = "toml")]
         Some("toml") => toml::from_str(contents(path)?.as_str()).map_err(ConfigFileError::Toml),
         _ => Err(ConfigFileError::UnknownFormat),
@@ -25,6 +27,9 @@ fn contents(path: &Path) -> Result<String> {
 pub enum ConfigFileError {
     #[error("couldn't read config file")]
     FileRead(#[from] std::io::Error),
+    #[cfg(feature = "json")]
+    #[error("couldn't parse JSON file")]
+    Json(#[from] serde_json::Error),
     #[cfg(feature = "toml")]
     #[error("couldn't parse TOML file")]
     Toml(#[from] toml::de::Error),
