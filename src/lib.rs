@@ -1,50 +1,94 @@
+#![deny(missing_docs)]
+#![warn(rust_2018_idioms)]
+#![doc(html_root_url = "https://docs.rs/config-file/0.1.0/")]
+
+//! # Read and parse configuration file automatically
+//!
+//! config-file reads your configuration files and parse them automatically using their extension.
+//!
+//! # Features
+//!
+//! - toml is enabled by default
+//! - json is optional
+//! - yaml is optional
+//!
+//! # Examples
+//!
+//! ```rust,no_run
+//! use config_file::FromConfigFile;
+//! use serde::Deserialize;
+//!
+//! #[derive(Deserialize)]
+//! struct Config {
+//!     host: String,
+//! }
+//!
+//! let config = Config::from_config_file("/etc/myconfig.toml").unwrap();
+//! ```
+
 use serde::de::DeserializeOwned;
 use std::{ffi::OsStr, path::Path};
 use thiserror::Error;
 #[cfg(feature = "toml")]
 use toml_crate as toml;
 
-pub type Result<T> = std::result::Result<T, ConfigFileError>;
-
+/// Trait for loading a struct from a configuration file.
+/// This trait is automatically implemented when serde::Deserialize is.
 pub trait FromConfigFile {
-    fn from_config_file<P: AsRef<Path>>(path: P) -> Result<Self> where Self: Sized;
+    /// Load ourselves from the configuration file located at @path
+    fn from_config_file<P: AsRef<Path>>(path: P) -> Result<Self, ConfigFileError>
+    where
+        Self: Sized;
 }
 
 impl<C: DeserializeOwned> FromConfigFile for C {
-    fn from_config_file<P: AsRef<Path>>(path: P) -> Result<Self> where Self: Sized {
+    fn from_config_file<P: AsRef<Path>>(path: P) -> Result<Self, ConfigFileError>
+    where
+        Self: Sized,
+    {
         let path = path.as_ref();
         let extension = path.extension().and_then(OsStr::to_str);
         match extension {
             #[cfg(feature = "json")]
-            Some("json") => serde_json::from_str(contents(path)?.as_str()).map_err(ConfigFileError::Json),
+            Some("json") => {
+                serde_json::from_str(contents(path)?.as_str()).map_err(ConfigFileError::Json)
+            }
             #[cfg(feature = "toml")]
             Some("toml") => toml::from_str(contents(path)?.as_str()).map_err(ConfigFileError::Toml),
             #[cfg(feature = "yaml")]
-            Some("yaml")|Some("yml") => serde_yaml::from_str(contents(path)?.as_str()).map_err(ConfigFileError::Yaml),
+            Some("yaml") | Some("yml") => {
+                serde_yaml::from_str(contents(path)?.as_str()).map_err(ConfigFileError::Yaml)
+            }
             _ => Err(ConfigFileError::UnknownFormat),
         }
     }
 }
 
 #[allow(unused)]
-fn contents(path: &Path) -> Result<String> {
+fn contents(path: &Path) -> Result<String, ConfigFileError> {
     std::fs::read_to_string(path).map_err(ConfigFileError::FileRead)
 }
 
+/// This type represents all possible errors that can occur when loading data from a configuration file.
 #[derive(Error, Debug)]
 pub enum ConfigFileError {
     #[error("couldn't read config file")]
+    /// There was an error while reading the configuration file
     FileRead(#[from] std::io::Error),
     #[cfg(feature = "json")]
     #[error("couldn't parse JSON file")]
+    /// There was an error while parsing the JSON data
     Json(#[from] serde_json::Error),
     #[cfg(feature = "toml")]
     #[error("couldn't parse TOML file")]
+    /// There was an error while parsing the TOML data
     Toml(#[from] toml::de::Error),
     #[cfg(feature = "yaml")]
     #[error("couldn't parse YAML file")]
+    /// There was an error while parsing the YAML data
     Yaml(#[from] serde_yaml::Error),
     #[error("don't know how to parse file")]
+    /// We don't know how to parse this format according to the file extension
     UnknownFormat,
 }
 
@@ -68,14 +112,13 @@ mod test {
     }
 
     impl TestConfig {
+        #[allow(unused)]
         fn example() -> Self {
             Self {
                 host: "example.com".to_string(),
                 port: 443,
                 tags: vec!["example".to_string(), "test".to_string()],
-                inner: TestConfigInner {
-                    answer: 42,
-                },
+                inner: TestConfigInner { answer: 42 },
             }
         }
     }

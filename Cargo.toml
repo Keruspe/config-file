@@ -1,8 +1,17 @@
 [package]
 name = "config-file"
-version = "0.1.0"
+version = "0.1.0" # remember to update html_root_url
 authors = ["Marc-Antoine Perennou <Marc-Antoine@Perennou.com>"]
 edition = "2018"
+description = "Read and parse configuration file automatically"
+repository = "https://github.com/Keruspe/config-file"
+documentation = "https://docs.rs/config-file"
+keywords = ["config", "configuration"]
+categories = ["configuration"]
+license = "BSD-2-Clause"
+
+[lib]
+name = "config_file"
 
 [features]
 default = ["toml"]
