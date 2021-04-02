@@ -14,6 +14,8 @@ pub fn parse<C: DeserializeOwned, P: AsRef<Path>>(path: P) -> Result<C> {
         Some("json") => serde_json::from_str(contents(path)?.as_str()).map_err(ConfigFileError::Json),
         #[cfg(feature = "toml")]
         Some("toml") => toml::from_str(contents(path)?.as_str()).map_err(ConfigFileError::Toml),
+        #[cfg(feature = "yaml")]
+        Some("yaml")|Some("yml") => serde_yaml::from_str(contents(path)?.as_str()).map_err(ConfigFileError::Yaml),
         _ => Err(ConfigFileError::UnknownFormat),
     }
 }
@@ -33,6 +35,9 @@ pub enum ConfigFileError {
     #[cfg(feature = "toml")]
     #[error("couldn't parse TOML file")]
     Toml(#[from] toml::de::Error),
+    #[cfg(feature = "yaml")]
+    #[error("couldn't parse YAML file")]
+    Yaml(#[from] serde_yaml::Error),
     #[error("don't know how to parse file")]
     UnknownFormat,
 }
