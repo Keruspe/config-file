@@ -55,7 +55,12 @@ impl<C: DeserializeOwned> FromConfigFile for C {
                 serde_json::from_reader(open_file(path)?).map_err(ConfigFileError::Json)
             }
             #[cfg(feature = "toml")]
-            Some("toml") => toml::from_str(std::fs::read_to_string(path).map_err(ConfigFileError::FileRead)?.as_str()).map_err(ConfigFileError::Toml),
+            Some("toml") => toml::from_str(
+                std::fs::read_to_string(path)
+                    .map_err(ConfigFileError::FileRead)?
+                    .as_str(),
+            )
+            .map_err(ConfigFileError::Toml),
             #[cfg(feature = "xml")]
             Some("xml") => {
                 serde_xml_rs::from_reader(open_file(path)?).map_err(ConfigFileError::Xml)
