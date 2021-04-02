@@ -6,17 +6,23 @@ use toml_crate as toml;
 
 pub type Result<T> = std::result::Result<T, ConfigFileError>;
 
-pub fn parse<C: DeserializeOwned, P: AsRef<Path>>(path: P) -> Result<C> {
-    let path = path.as_ref();
-    let extension = path.extension().and_then(OsStr::to_str);
-    match extension {
-        #[cfg(feature = "json")]
-        Some("json") => serde_json::from_str(contents(path)?.as_str()).map_err(ConfigFileError::Json),
-        #[cfg(feature = "toml")]
-        Some("toml") => toml::from_str(contents(path)?.as_str()).map_err(ConfigFileError::Toml),
-        #[cfg(feature = "yaml")]
-        Some("yaml")|Some("yml") => serde_yaml::from_str(contents(path)?.as_str()).map_err(ConfigFileError::Yaml),
-        _ => Err(ConfigFileError::UnknownFormat),
+pub trait FromConfigFile {
+    fn from_config_file<P: AsRef<Path>>(path: P) -> Result<Self> where Self: Sized;
+}
+
+impl<C: DeserializeOwned> FromConfigFile for C {
+    fn from_config_file<P: AsRef<Path>>(path: P) -> Result<Self> where Self: Sized {
+        let path = path.as_ref();
+        let extension = path.extension().and_then(OsStr::to_str);
+        match extension {
+            #[cfg(feature = "json")]
+            Some("json") => serde_json::from_str(contents(path)?.as_str()).map_err(ConfigFileError::Json),
+            #[cfg(feature = "toml")]
+            Some("toml") => toml::from_str(contents(path)?.as_str()).map_err(ConfigFileError::Toml),
+            #[cfg(feature = "yaml")]
+            Some("yaml")|Some("yml") => serde_yaml::from_str(contents(path)?.as_str()).map_err(ConfigFileError::Yaml),
+            _ => Err(ConfigFileError::UnknownFormat),
+        }
     }
 }
 
@@ -76,35 +82,35 @@ mod test {
 
     #[test]
     fn test_unknown() {
-        let config = parse::<TestConfig, _>("/tmp/foobar");
+        let config = TestConfig::from_config_file("/tmp/foobar");
         assert!(matches!(config, Err(ConfigFileError::UnknownFormat)));
     }
 
     #[test]
     #[cfg(feature = "toml")]
     fn test_file_not_found() {
-        let config = parse::<TestConfig, _>("/tmp/foobar.toml");
+        let config = TestConfig::from_config_file("/tmp/foobar.toml");
         assert!(matches!(config, Err(ConfigFileError::FileRead(_))));
     }
 
     #[test]
     #[cfg(feature = "json")]
     fn test_json() {
-        let config = parse::<TestConfig, _>("testdata/config.json");
+        let config = TestConfig::from_config_file("testdata/config.json");
         assert_eq!(config.unwrap(), TestConfig::example());
     }
 
     #[test]
     #[cfg(feature = "toml")]
     fn test_toml() {
-        let config = parse::<TestConfig, _>("testdata/config.toml");
+        let config = TestConfig::from_config_file("testdata/config.toml");
         assert_eq!(config.unwrap(), TestConfig::example());
     }
 
     #[test]
     #[cfg(feature = "yaml")]
     fn test_yaml() {
-        let config = parse::<TestConfig, _>("testdata/config.yml");
+        let config = TestConfig::from_config_file("testdata/config.yml");
         assert_eq!(config.unwrap(), TestConfig::example());
     }
 }
