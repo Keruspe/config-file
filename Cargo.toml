@@ -1,0 +1,18 @@
+[package]
+name = "config-file"
+version = "0.1.0"
+authors = ["Marc-Antoine Perennou <Marc-Antoine@Perennou.com>"]
+edition = "2018"
+
+[features]
+default = ["toml"]
+toml = ["toml-crate"]
+
+[dependencies]
+serde = "^1.0"
+thiserror = "^1.0"
+
+[dependencies.toml-crate]
+package = "toml"
+version = "^0.5"
+optional = true
