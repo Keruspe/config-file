@@ -48,8 +48,11 @@ impl<C: DeserializeOwned> FromConfigFile for C {
         Self: Sized,
     {
         let path = path.as_ref();
-        let extension = path.extension().and_then(OsStr::to_str);
-        match extension {
+        let extension = path
+            .extension()
+            .and_then(OsStr::to_str)
+            .map(|extension| extension.to_lowercase());
+        match extension.as_deref() {
             #[cfg(feature = "json")]
             Some("json") => {
                 serde_json::from_reader(open_file(path)?).map_err(ConfigFileError::Json)
