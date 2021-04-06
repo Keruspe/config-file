@@ -1,6 +1,6 @@
 #![deny(missing_docs)]
 #![warn(rust_2018_idioms)]
-#![doc(html_root_url = "https://docs.rs/config-file/0.2.0/")]
+#![doc(html_root_url = "https://docs.rs/config-file/0.2.1/")]
 
 //! # Read and parse configuration file automatically
 //!
