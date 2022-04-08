@@ -2,13 +2,14 @@
 name = "config-file"
 version = "0.2.2" # remember to update html_root_url
 authors = ["Marc-Antoine Perennou <Marc-Antoine@Perennou.com>"]
-edition = "2018"
+edition = "2021"
 description = "Read and parse configuration file automatically"
 repository = "https://github.com/Keruspe/config-file"
 documentation = "https://docs.rs/config-file"
 keywords = ["config", "configuration"]
 categories = ["config"]
 license = "BSD-2-Clause"
+rust-version = "1.56.0"
 
 [lib]
 name = "config_file"
